@@ -1,6 +1,6 @@
 function Footer() {
   return (
-    <footer style={{ padding: '10px', backgroundColor: '#005EB8', color: '#FFFFFF', textAlign: 'center', marginTop: 'auto' }}>
+    <footer style={{ padding: '30px', backgroundColor: '#3C388D', color: '#FFFFFF', textAlign: 'center', marginTop: 'auto' }}>
       <p>© 2025 ТУСУР. Разработано для IT-Academy.</p>
     </footer>
   );

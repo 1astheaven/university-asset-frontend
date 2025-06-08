@@ -1,59 +1,55 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getRoom, getRoomAssets } from '../services/api';
+import { useParams } from 'react-router-dom';
+import { getRooms, getAssetsByRoom } from '../services/api'; // Исправлены импорты
 
 function RoomDetailPage() {
   const { roomId } = useParams();
-  const navigate = useNavigate();
   const [room, setRoom] = useState(null);
   const [assets, setAssets] = useState([]);
-  const categories = [...new Set(assets.map(asset => asset.category))];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchRoom = async () => {
+    const fetchRoomAndAssets = async () => {
+      setLoading(true);
       try {
-        const roomData = await getRoom(roomId);
-        const assetsData = await getRoomAssets(roomId);
-        setRoom(roomData);
+        // Предполагаем, что getRooms возвращает массив, ищем комнату по ID
+        const rooms = await getRooms(); // Или используйте отдельный эндпоинт getRoom, если он есть
+        const foundRoom = rooms.find(r => r.id === parseInt(roomId));
+        if (!foundRoom) throw new Error('Комната не найдена');
+        setRoom(foundRoom);
+
+        const assetsData = await getAssetsByRoom(roomId);
         setAssets(assetsData);
       } catch (err) {
-        console.error('Ошибка при загрузке помещения:', err);
+        setError('Не удалось загрузить данные комнаты');
+      } finally {
+        setLoading(false);
       }
     };
-    fetchRoom();
+    fetchRoomAndAssets();
   }, [roomId]);
 
-  if (!room) return <div>Загрузка...</div>;
+  if (loading) return <div className="content"><p>Загрузка...</p></div>;
+  if (error) return <div className="content"><p style={{ color: 'red' }}>{error}</p></div>;
+  if (!room) return <div className="content"><p>Комната не найдена</p></div>;
 
   return (
     <div className="content">
-      <h2>Помещение: {room.name}</h2>
-      <div style={{ marginBottom: '20px' }}>
-        <h3>Схема помещения</h3>
-        <div style={{ width: '300px', height: '200px', border: '1px solid #ccc', textAlign: 'center', lineHeight: '200px' }}>
-          Условная схема помещения
-        </div>
-      </div>
-      <h3>Список имущества</h3>
-      {categories.map((category) => (
-        <div key={category}>
-          <h4>{category}</h4>
-          <ul>
-            {assets
-              .filter((asset) => asset.category === category)
-              .map((asset) => (
-                <li
-                  key={asset.id}
-                  onClick={() => navigate(`/assets/${asset.id}`)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {asset.name} (Инв. №: {asset.inventory_number})
-                  {asset.photo && <img src={asset.photo} alt={asset.name} style={{ width: '50px', marginLeft: '10px' }} />}
-                </li>
-              ))}
-          </ul>
-        </div>
-      ))}
+      <h2>Детали помещения: {room.name}</h2>
+      <p>Этаж: {room.floor_id}</p> {/* Предполагаем, что floor_id доступен */}
+      <h3>Имущество:</h3>
+      {assets.length > 0 ? (
+        <ul>
+          {assets.map((asset) => (
+            <li key={asset.id}>
+              {asset.name} (Категория: {asset.category}, Статус: {asset.status})
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Имущества нет.</p>
+      )}
     </div>
   );
 }
